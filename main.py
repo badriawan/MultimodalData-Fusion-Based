@@ -7,15 +7,20 @@ import numpy as np
 class FusionDataset(Dataset):
     def __init__(self, root_dir, img_size=256):
         self.root_dir = root_dir
-        self.samples = sorted(os.listdir(root_dir))
         self.img_size = img_size
+
+        # ✅ FILTER: hanya folder
+        self.samples = sorted([
+            d for d in os.listdir(root_dir)
+            if os.path.isdir(os.path.join(root_dir, d))
+        ])
 
     def __len__(self):
         return len(self.samples)
 
     def _find_file(self, folder, keyword):
         for f in os.listdir(folder):
-            if keyword in f:
+            if keyword in f.lower():
                 return os.path.join(folder, f)
         return None
 
@@ -26,17 +31,15 @@ class FusionDataset(Dataset):
         therm_path = self._find_file(sample_folder, "therm")
         rgb_path   = self._find_file(sample_folder, ".png")
 
-        # Safety check
         if depth_path is None or therm_path is None or rgb_path is None:
-            raise FileNotFoundError(f"Missing file in {sample_folder}")
+            raise FileNotFoundError(f"Missing modality in {sample_folder}")
 
         depth = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
         therm = cv2.imread(therm_path, cv2.IMREAD_GRAYSCALE)
         rgb   = cv2.imread(rgb_path, cv2.IMREAD_GRAYSCALE)
 
-        # Extra safety
         if depth is None or therm is None or rgb is None:
-            raise ValueError(f"Corrupted image in {sample_folder}")
+            raise ValueError(f"Unreadable image in {sample_folder}")
 
         depth = cv2.resize(depth, (self.img_size, self.img_size))
         therm = cv2.resize(therm, (self.img_size, self.img_size))
@@ -51,14 +54,16 @@ class FusionDataset(Dataset):
 
         return input_tensor, target
 
-
-
 from torch.utils.data import DataLoader, random_split
 
 
 data_directory = "/content/drive/MyDrive/S3 UTP/MS2_dataset/fusion_dataset"
 
 dataset = FusionDataset(data_directory)
+print("Total valid samples:", len(dataset))
+
+x, y = dataset[0]
+print(x.shape, y.shape)
 
 train_size = int(0.8 * len(dataset))  # 200
 test_size = len(dataset) - train_size  # 50
