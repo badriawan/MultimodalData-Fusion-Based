@@ -39,7 +39,10 @@ class FusionDataset(Dataset):
 
 from torch.utils.data import DataLoader, random_split
 
-dataset = FusionDataset("fusion_dataset")
+
+data_directory = "/content/drive/MyDrive/S3 UTP/MS2_dataset/fusion_dataset"
+
+dataset = FusionDataset(data_directory)
 
 train_size = int(0.8 * len(dataset))  # 200
 test_size = len(dataset) - train_size  # 50
