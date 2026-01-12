@@ -115,3 +115,32 @@ for epoch in range(epochs):
         epoch_loss += loss.item()
 
     print(f"Epoch [{epoch+1}/{epochs}] Loss: {epoch_loss/len(train_loader):.5f}")
+
+
+from skimage.metrics import structural_similarity as ssim
+
+def dice_score(pred, gt, threshold=0.5):
+    pred = (pred > threshold).float()
+    gt = (gt > threshold).float()
+    intersection = (pred * gt).sum()
+    return (2 * intersection) / (pred.sum() + gt.sum() + 1e-8)
+
+model.eval()
+ssim_scores = []
+dice_scores = []
+
+with torch.no_grad():
+    for inputs, targets in test_loader:
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+
+        outputs = model(inputs)
+
+        pred = outputs.squeeze().cpu().numpy()
+        gt = targets.squeeze().cpu().numpy()
+
+        ssim_scores.append(ssim(pred, gt, data_range=1.0))
+        dice_scores.append(dice_score(outputs, targets).item())
+
+print("Average SSIM:", np.mean(ssim_scores))
+print("Average Dice Score:", np.mean(dice_scores))
