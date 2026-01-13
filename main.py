@@ -150,7 +150,7 @@ with torch.no_grad():
 print("Average SSIM:", np.mean(ssim_scores))
 print("Average Dice Score:", np.mean(dice_scores))
 
-#Display Fused Sample
+#Save Fused Sample
 import matplotlib.pyplot as plt
 model.eval()
 
@@ -194,6 +194,18 @@ plt.axis("off")
 plt.tight_layout()
 plt.savefig("fusion_comparison.png", dpi=300, bbox_inches="tight")
 plt.close()
+
+#Original_Images
+os.makedirs("original_images", exist_ok=True)
+
+depth = inputs[0,0].cpu().numpy()
+thermal = inputs[0,1].cpu().numpy()
+rgb = inputs[0,2].cpu().numpy()
+
+cv2.imwrite("original_images/depth.png", (depth * 255).astype("uint8"))
+cv2.imwrite("original_images/thermal.png", (thermal * 255).astype("uint8"))
+cv2.imwrite("original_images/rgb.png", (rgb * 255).astype("uint8"))
+
 
 #Batch_Fused
 os.makedirs("fusion_results/batch", exist_ok=True)
