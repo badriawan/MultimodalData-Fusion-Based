@@ -161,9 +161,5 @@ with torch.no_grad():
     fused = model(inputs)
 
 fused_img = fused.squeeze().cpu().numpy()
-
-plt.figure(figsize=(5,5))
-plt.imshow(fused_img, cmap='gray')
-plt.title("Fused Image")
-plt.axis("off")
-plt.show()
+fused_save = (fused_img * 255).astype("uint8")
+cv2.imwrite("fusion_result.png", fused_save)
