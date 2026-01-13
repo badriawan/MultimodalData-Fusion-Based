@@ -149,3 +149,21 @@ with torch.no_grad():
 
 print("Average SSIM:", np.mean(ssim_scores))
 print("Average Dice Score:", np.mean(dice_scores))
+
+#Display Fused Sample
+import matplotlib.pyplot as plt
+model.eval()
+
+with torch.no_grad():
+    inputs, targets = next(iter(test_loader))
+    inputs = inputs.to(device)
+
+    fused = model(inputs)
+
+fused_img = fused.squeeze().cpu().numpy()
+
+plt.figure(figsize=(5,5))
+plt.imshow(fused_img, cmap='gray')
+plt.title("Fused Image")
+plt.axis("off")
+plt.show()
