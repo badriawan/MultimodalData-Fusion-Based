@@ -163,3 +163,35 @@ with torch.no_grad():
 fused_img = fused.squeeze().cpu().numpy()
 fused_save = (fused_img * 255).astype("uint8")
 cv2.imwrite("fusion_result.png", fused_save)
+
+
+depth = inputs[0,0].cpu().numpy()
+thermal = inputs[0,1].cpu().numpy()
+rgb = inputs[0,2].cpu().numpy()
+
+plt.figure(figsize=(12,3))
+
+plt.subplot(1,4,1)
+plt.imshow(depth, cmap='gray')
+plt.title("Depth")
+plt.axis("off")
+
+plt.subplot(1,4,2)
+plt.imshow(thermal, cmap='hot')
+plt.title("Thermal")
+plt.axis("off")
+
+plt.subplot(1,4,3)
+plt.imshow(rgb, cmap='gray')
+plt.title("RGB")
+plt.axis("off")
+
+plt.subplot(1,4,4)
+plt.imshow(fused_img, cmap='gray')
+plt.title("Fused Output")
+plt.axis("off")
+
+plt.tight_layout()
+plt.savefig("fusion_results/fusion_comparison.png", dpi=300, bbox_inches="tight")
+plt.close()
+
