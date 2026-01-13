@@ -134,6 +134,16 @@ for epoch in range(epochs):
 
     print(f"Epoch [{epoch+1}/{epochs}] Loss: {epoch_loss/len(train_loader):.5f}")
 
+# training selesai
+torch.save(model.state_dict(), "cnn_fusion_model_only.pth")
+
+model = CNNFusion().to(device)
+model.load_state_dict(torch.load("cnn_fusion_model_only.pth", map_location=device))
+model.eval()
+
+print("Model loaded successfully")
+
+
 
 from skimage.metrics import structural_similarity as ssim
 
