@@ -195,3 +195,17 @@ plt.tight_layout()
 plt.savefig("fusion_comparison.png", dpi=300, bbox_inches="tight")
 plt.close()
 
+#Batch_Fused
+os.makedirs("fusion_results/batch", exist_ok=True)
+
+model.eval()
+for i, (inputs, _) in enumerate(test_loader):
+    inputs = inputs.to(device)
+
+    with torch.no_grad():
+        fused = model(inputs)
+
+    fused_img = fused.squeeze().cpu().numpy()
+    fused_save = (fused_img * 255).astype("uint8")
+
+    cv2.imwrite(f"fusion_results/batch/fused_{i:03d}.png", fused_save)
