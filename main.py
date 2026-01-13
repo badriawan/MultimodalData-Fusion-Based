@@ -177,12 +177,12 @@ plt.title("Depth")
 plt.axis("off")
 
 plt.subplot(1,4,2)
-plt.imshow(thermal, cmap='hot')
+plt.imshow(thermal, cmap='gray')
 plt.title("Thermal")
 plt.axis("off")
 
 plt.subplot(1,4,3)
-plt.imshow(rgb)
+plt.imshow(rgb, cmap='gray')
 plt.title("RGB")
 plt.axis("off")
 
