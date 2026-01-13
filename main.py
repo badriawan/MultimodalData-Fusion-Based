@@ -192,6 +192,6 @@ plt.title("Fused Output")
 plt.axis("off")
 
 plt.tight_layout()
-plt.savefig("fusion_results/fusion_comparison.png", dpi=300, bbox_inches="tight")
+plt.savefig("fusion_comparison.png", dpi=300, bbox_inches="tight")
 plt.close()
 
