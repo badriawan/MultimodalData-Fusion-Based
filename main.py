@@ -73,6 +73,17 @@ train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
+test_indices = test_dataset.indices
+
+# Get Samples Test Data
+test_sample_names = [dataset.samples[i] for i in test_indices]
+
+print("Test samples:")
+for name in test_sample_names:
+    print(name)
+
+
+#CNN Model Based Fusion
 import torch.nn as nn
 
 class CNNFusion(nn.Module):
@@ -96,6 +107,8 @@ class CNNFusion(nn.Module):
         return self.decoder(self.encoder(x))
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Device using : ", device)
+
 
 model = CNNFusion().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
