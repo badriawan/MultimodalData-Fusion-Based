@@ -182,7 +182,7 @@ plt.title("Thermal")
 plt.axis("off")
 
 plt.subplot(1,4,3)
-plt.imshow(rgb, cmap='gray')
+plt.imshow(rgb)
 plt.title("RGB")
 plt.axis("off")
 
