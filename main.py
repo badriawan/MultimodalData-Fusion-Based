@@ -9,53 +9,53 @@ class FusionDataset(Dataset):
         self.root_dir = root_dir
         self.img_size = img_size
 
-        # ✅ FILTER: hanya folder
+        # Ambil semua file RGB (tanpa suffix)
         self.samples = sorted([
-            d for d in os.listdir(root_dir)
-            if os.path.isdir(os.path.join(root_dir, d))
+            f.replace(".png", "")
+            for f in os.listdir(root_dir)
+            if f.endswith(".png")
+            and "_nir" not in f
+            and "_therm" not in f
         ])
 
     def __len__(self):
         return len(self.samples)
 
-    def _find_file(self, folder, keyword):
-        for f in os.listdir(folder):
-            if keyword in f.lower():
-                return os.path.join(folder, f)
-        return None
-
     def __getitem__(self, idx):
-        sample_folder = os.path.join(self.root_dir, self.samples[idx])
+        sample_id = self.samples[idx]
 
-        depth_path = self._find_file(sample_folder, "depth")
-        therm_path = self._find_file(sample_folder, "therm")
-        rgb_path   = self._find_file(sample_folder, ".png")
+        rgb_path   = os.path.join(self.root_dir, f"{sample_id}.png")
+        nir_path   = os.path.join(self.root_dir, f"{sample_id}_nir.png")
+        therm_path = os.path.join(self.root_dir, f"{sample_id}_therm.png")
 
-        if depth_path is None or therm_path is None or rgb_path is None:
-            raise FileNotFoundError(f"Missing modality in {sample_folder}")
+        if not (os.path.exists(rgb_path) and os.path.exists(nir_path) and os.path.exists(therm_path)):
+            raise FileNotFoundError(f"Missing modality for sample {sample_id}")
 
-        depth = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
-        therm = cv2.imread(therm_path, cv2.IMREAD_GRAYSCALE)
         rgb   = cv2.imread(rgb_path, cv2.IMREAD_GRAYSCALE)
+        nir   = cv2.imread(nir_path, cv2.IMREAD_GRAYSCALE)
+        therm = cv2.imread(therm_path, cv2.IMREAD_GRAYSCALE)
 
-        if depth is None or therm is None or rgb is None:
-            raise ValueError(f"Unreadable image in {sample_folder}")
+        if rgb is None or nir is None or therm is None:
+            raise ValueError(f"Unreadable image for sample {sample_id}")
 
-        depth = cv2.resize(depth, (self.img_size, self.img_size))
-        therm = cv2.resize(therm, (self.img_size, self.img_size))
         rgb   = cv2.resize(rgb, (self.img_size, self.img_size))
+        nir   = cv2.resize(nir, (self.img_size, self.img_size))
+        therm = cv2.resize(therm, (self.img_size, self.img_size))
 
-        depth = torch.tensor(depth, dtype=torch.float32) / 255.0
-        therm = torch.tensor(therm, dtype=torch.float32) / 255.0
         rgb   = torch.tensor(rgb, dtype=torch.float32) / 255.0
+        nir   = torch.tensor(nir, dtype=torch.float32) / 255.0
+        therm = torch.tensor(therm, dtype=torch.float32) / 255.0
 
-        input_tensor = torch.stack([depth, therm, rgb], dim=0)
+        # Input: (3, H, W) → [NIR, Thermal, RGB]
+        input_tensor = torch.stack([nir, therm, rgb], dim=0)
+
+        # Pseudo-GT (RGB)
         target = rgb.unsqueeze(0)
 
         return input_tensor, target
 
-from torch.utils.data import DataLoader, random_split
 
+from torch.utils.data import DataLoader, random_split
 
 data_directory = "/content/drive/MyDrive/S3 UTP/MS2_dataset/fusion_dataset"
 
@@ -63,19 +63,21 @@ dataset = FusionDataset(data_directory)
 print("Total valid samples:", len(dataset))
 
 x, y = dataset[0]
-print(x.shape, y.shape)
+print("Input shape:", x.shape)
+print("Target shape:", y.shape)
 
-train_size = int(0.8 * len(dataset))  # 200
-test_size = len(dataset) - train_size  # 50
+import torch
+torch.manual_seed(42)
+
+train_size = int(0.8 * len(dataset))
+test_size = len(dataset) - train_size
 
 train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+test_loader  = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 test_indices = test_dataset.indices
-
-# Get Samples Test Data
 test_sample_names = [dataset.samples[i] for i in test_indices]
 
 print("Test samples:")
