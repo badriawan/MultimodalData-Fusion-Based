@@ -57,7 +57,7 @@ class FusionDataset(Dataset):
 
 from torch.utils.data import DataLoader, random_split
 
-data_directory = "/content/drive/MyDrive/S3 UTP/MS2_dataset/fusion_dataset"
+data_directory = "/content/drive/MyDrive/S3 UTP/MS2_dataset/fusion_dataset_2"
 
 dataset = FusionDataset(data_directory)
 print("Total valid samples:", len(dataset))
