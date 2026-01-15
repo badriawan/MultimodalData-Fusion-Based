@@ -3,6 +3,8 @@ import cv2
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 class FusionDataset(Dataset):
     def __init__(self, root_dir, img_size=256):
@@ -229,8 +231,76 @@ with torch.no_grad():
 print("Average SSIM:", np.mean(ssim_scores))
 print("Average Dice Score:", np.mean(dice_scores))
 
+#Refrences free-metrics
+def entropy(img):
+    hist, _ = np.histogram(img.flatten(), bins=256, range=(0,1), density=True)
+    hist = hist + 1e-12
+    return -np.sum(hist * np.log2(hist))
+
+def mutual_information(img1, img2, bins=256):
+    hgram, _, _ = np.histogram2d(
+        img1.flatten(), img2.flatten(), bins=bins, range=[[0,1],[0,1]]
+    )
+    pxy = hgram / np.sum(hgram)
+    px = np.sum(pxy, axis=1)
+    py = np.sum(pxy, axis=0)
+
+    px_py = px[:, None] * py[None, :]
+    nzs = pxy > 0
+
+    return np.sum(pxy[nzs] * np.log2(pxy[nzs] / px_py[nzs]))
+
+def edge_preservation(fused, img):
+    fused_edge = cv2.Sobel(fused, cv2.CV_64F, 1, 1, ksize=3)
+    img_edge   = cv2.Sobel(img, cv2.CV_64F, 1, 1, ksize=3)
+
+    numerator = np.sum(fused_edge * img_edge)
+    denominator = np.sqrt(
+        np.sum(fused_edge ** 2) * np.sum(img_edge ** 2)
+    ) + 1e-8
+
+    return numerator / denominator
+
+entropy_scores = []
+mi_scores = []
+epi_scores = []
+
+model.eval()
+with torch.no_grad():
+    for inputs, _ in test_loader:
+        inputs = inputs.to(device)
+        fused = model(inputs)
+
+        fused_img = fused.squeeze().cpu().numpy()
+        rgb = inputs[0,2].cpu().numpy()
+        nir = inputs[0,0].cpu().numpy()
+        therm = inputs[0,1].cpu().numpy()
+
+        # Entropy
+        entropy_scores.append(entropy(fused_img))
+
+        # Mutual Information
+        mi_total = (
+            mutual_information(fused_img, rgb) +
+            mutual_information(fused_img, nir) +
+            mutual_information(fused_img, therm)
+        )
+        mi_scores.append(mi_total)
+
+        # Edge Preservation
+        epi = (
+            edge_preservation(fused_img, rgb) +
+            edge_preservation(fused_img, nir) +
+            edge_preservation(fused_img, therm)
+        ) / 3
+        epi_scores.append(epi)
+
+print("Average Entropy:", np.mean(entropy_scores))
+print("Average Mutual Information:", np.mean(mi_scores))
+print("Average Edge Preservation Index:", np.mean(epi_scores))
+
+
 #Save Fused Sample
-import matplotlib.pyplot as plt
 model.eval()
 
 with torch.no_grad():
