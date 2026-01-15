@@ -55,27 +55,24 @@ class FusionDataset(Dataset):
         return input_tensor, target
 
 
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import random_split, DataLoader
 
-data_directory = "/content/drive/MyDrive/S3 UTP/MS2_dataset/fusion_dataset_2"
-
-dataset = FusionDataset(data_directory)
-print("Total valid samples:", len(dataset))
-
-x, y = dataset[0]
-print("Input shape:", x.shape)
-print("Target shape:", y.shape)
-
-import torch
 torch.manual_seed(42)
 
 train_size = int(0.8 * len(dataset))
 test_size = len(dataset) - train_size
-
 train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
+# split train → train + val
+val_size = int(0.2 * len(train_dataset))
+train_size = len(train_dataset) - val_size
+train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
+
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+val_loader   = DataLoader(val_dataset, batch_size=8, shuffle=False)
 test_loader  = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+print(f"Train: {len(train_dataset)} | Val: {len(val_dataset)} | Test: {len(test_dataset)}")
 
 test_indices = test_dataset.indices
 test_sample_names = [dataset.samples[i] for i in test_indices]
@@ -117,10 +114,13 @@ optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 criterion = nn.MSELoss()
 
 epochs = 50
+train_losses = []
+val_losses = []
 
 for epoch in range(epochs):
+    # ---------- TRAIN ----------
     model.train()
-    epoch_loss = 0
+    train_loss = 0.0
 
     for inputs, targets in train_loader:
         inputs = inputs.to(device)
@@ -129,12 +129,55 @@ for epoch in range(epochs):
         optimizer.zero_grad()
         outputs = model(inputs)
         loss = criterion(outputs, targets)
+
         loss.backward()
         optimizer.step()
 
-        epoch_loss += loss.item()
+        train_loss += loss.item()
 
-    print(f"Epoch [{epoch+1}/{epochs}] Loss: {epoch_loss/len(train_loader):.5f}")
+    avg_train_loss = train_loss / len(train_loader)
+    train_losses.append(avg_train_loss)
+
+    # ---------- VALIDATION ----------
+    model.eval()
+    val_loss = 0.0
+
+    with torch.no_grad():
+        for inputs, targets in val_loader:
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            val_loss += loss.item()
+
+    avg_val_loss = val_loss / len(val_loader)
+    val_losses.append(avg_val_loss)
+
+    print(
+        f"Epoch [{epoch+1}/{epochs}] "
+        f"Train Loss: {avg_train_loss:.5f} | "
+        f"Val Loss: {avg_val_loss:.5f}"
+    )
+
+
+#save training plot
+os.makedirs("training_logs", exist_ok=True)
+
+plt.figure(figsize=(6,4))
+plt.plot(train_losses, label="Training Loss", linewidth=2)
+plt.plot(val_losses, label="Validation Loss", linewidth=2)
+
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training and Validation Loss")
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.savefig("train_val_loss_curve.png", dpi=300, bbox_inches="tight")
+plt.close()
+
 
 # training selesai
 torch.save(model.state_dict(), "cnn_fusion_model_only.pth")
