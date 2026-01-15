@@ -55,7 +55,18 @@ class FusionDataset(Dataset):
         return input_tensor, target
 
 
-from torch.utils.data import random_split, DataLoader
+from torch.utils.data import DataLoader, random_split
+
+data_directory = "/content/drive/MyDrive/S3 UTP/MS2_dataset/fusion_dataset_2"
+
+dataset = FusionDataset(data_directory)
+print("Total valid samples:", len(dataset))
+
+x, y = dataset[0]
+print("Input shape:", x.shape)
+print("Target shape:", y.shape)
+
+import torch
 
 torch.manual_seed(42)
 
