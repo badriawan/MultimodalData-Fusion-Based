@@ -233,9 +233,12 @@ print("Average Dice Score:", np.mean(dice_scores))
 
 #Refrences free-metrics
 def entropy(img):
-    hist, _ = np.histogram(img.flatten(), bins=256, range=(0,1), density=True)
-    hist = hist + 1e-12
-    return -np.sum(hist * np.log2(hist))
+    img_uint8 = (img * 255).astype(np.uint8)
+    hist = np.bincount(img_uint8.flatten(), minlength=256)
+    prob = hist / np.sum(hist)
+    prob = prob[prob > 0]
+    return -np.sum(prob * np.log2(prob))
+
 
 def mutual_information(img1, img2, bins=256):
     hgram, _, _ = np.histogram2d(
