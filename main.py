@@ -197,15 +197,26 @@ plt.savefig("train_val_loss_curve.png", dpi=300, bbox_inches="tight")
 plt.close()
 
 
-# training selesai
-torch.save(model.state_dict(), "cnn_fusion_model_only.pth")
+# # training selesai
+# torch.save(model.state_dict(), "cnn_fusion_model_only.pth")
 
-model = CNNFusion().to(device)
-model.load_state_dict(torch.load("cnn_fusion_model_only.pth", map_location=device))
+# model = CNNFusion().to(device)
+# model.load_state_dict(torch.load("cnn_fusion_model_only.pth", map_location=device))
+# model.eval()
+
+# print("Model loaded successfully")
+
+
+# training selesai
+torch.save(model.state_dict(), "unet_dual_encoder_attention.pth")
+
+model = UNetDualEncoderFusion(use_attention=True).to(device)
+model.load_state_dict(
+    torch.load("unet_dual_encoder_attention.pth", map_location=device)
+)
 model.eval()
 
 print("Model loaded successfully")
-
 
 
 from skimage.metrics import structural_similarity as ssim
