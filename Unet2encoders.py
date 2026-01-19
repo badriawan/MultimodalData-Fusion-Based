@@ -74,10 +74,10 @@ class Decoder(nn.Module):
     def __init__(self):
         super().__init__()
         self.up2 = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.dec2 = ConvBlock(256, 128)
+        self.dec2 = ConvBlock(128 + 128, 128)  # 256 → 128
 
         self.up1 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.dec1 = ConvBlock(128, 64)
+        self.dec1 = ConvBlock(64 + 64, 64)     # 128 → 64
 
         self.out = nn.Conv2d(64, 1, kernel_size=1)
 
@@ -89,6 +89,8 @@ class Decoder(nn.Module):
         x = self.dec1(torch.cat([x, skip1], dim=1))
 
         return torch.sigmoid(self.out(x))
+
+
 
 
 class UNetDualEncoderFusion(nn.Module):
@@ -120,9 +122,10 @@ class UNetDualEncoderFusion(nn.Module):
         fused = torch.cat([e3a, e3b], dim=1)
         fused = self.attn(fused)
 
-        # Skip fusion
-        skip2 = e2a + e2b
-        skip1 = e1a + e1b
+        # Skip fusion (concat, bukan add)
+        skip2 = torch.cat([e2a, e2b], dim=1)
+        skip1 = torch.cat([e1a, e1b], dim=1)
 
         return self.decoder(fused, skip2, skip1)
+
 
