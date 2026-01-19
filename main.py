@@ -5,6 +5,8 @@ from torch.utils.data import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
 
+from Unet2encoders import UNetDualEncoderFusion
+
 
 class FusionDataset(Dataset):
     def __init__(self, root_dir, img_size=256):
@@ -122,7 +124,10 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Device using : ", device)
 
 
-model = CNNFusion().to(device)
+# model = CNNFusion().to(device)
+
+model = UNetDualEncoderFusion(use_attention=True).to(device)
+
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 criterion = nn.MSELoss()
 
