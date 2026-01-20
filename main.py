@@ -195,8 +195,8 @@ for epoch in range(epochs):
                 outputs,
                 rgb=targets,
                 nir=nir,
-                w_rgb=0.4,
-                w_nir=0.6
+                w_rgb=0.6,
+                w_nir=0.4
             )
 
             val_loss += loss.item()
