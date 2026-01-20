@@ -124,12 +124,25 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Device using : ", device)
 
 
+#fusion loss for NIR domination
+import torch.nn.functional as F
+
+def fusion_loss(fused, rgb, nir,
+                w_rgb=0.4,
+                w_nir=0.6):
+    loss_rgb = F.mse_loss(fused, rgb)
+    loss_nir = F.mse_loss(fused, nir)
+    return w_rgb * loss_rgb + w_nir * loss_nir
+
+
+
+#Training Loop
+
 # model = CNNFusion().to(device)
 
 model = UNetDualEncoderFusion(use_attention=True).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-criterion = nn.MSELoss()
 
 epochs = 50
 train_losses = []
@@ -142,11 +155,20 @@ for epoch in range(epochs):
 
     for inputs, targets in train_loader:
         inputs = inputs.to(device)
-        targets = targets.to(device)
+        targets = targets.to(device)   # RGB pseudo-GT
+
+        nir = inputs[:, 0:1, :, :]     # NIR channel
 
         optimizer.zero_grad()
         outputs = model(inputs)
-        loss = criterion(outputs, targets)
+
+        loss = fusion_loss(
+            outputs,
+            rgb=targets,
+            nir=nir,
+            w_rgb=0.4,
+            w_nir=0.6
+        )
 
         loss.backward()
         optimizer.step()
@@ -165,8 +187,18 @@ for epoch in range(epochs):
             inputs = inputs.to(device)
             targets = targets.to(device)
 
+            nir = inputs[:, 0:1, :, :]
+
             outputs = model(inputs)
-            loss = criterion(outputs, targets)
+
+            loss = fusion_loss(
+                outputs,
+                rgb=targets,
+                nir=nir,
+                w_rgb=0.4,
+                w_nir=0.6
+            )
+
             val_loss += loss.item()
 
     avg_val_loss = val_loss / len(val_loader)
