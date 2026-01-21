@@ -125,14 +125,29 @@ print("Device using : ", device)
 
 
 #fusion loss for NIR domination
+# import torch.nn.functional as F
+
+# def fusion_loss(fused, rgb, nir,
+#                 w_rgb=0.4,
+#                 w_nir=0.6):
+#     loss_rgb = F.mse_loss(fused, rgb)
+#     loss_nir = F.mse_loss(fused, nir)
+#     return w_rgb * loss_rgb + w_nir * loss_nir
+
+
+
 import torch.nn.functional as F
 
-def fusion_loss(fused, rgb, nir,
-                w_rgb=0.4,
-                w_nir=0.6):
-    loss_rgb = F.mse_loss(fused, rgb)
-    loss_nir = F.mse_loss(fused, nir)
-    return w_rgb * loss_rgb + w_nir * loss_nir
+def gradient_loss(fused, nir):
+    # horizontal gradient
+    fx = fused[:, :, :, 1:] - fused[:, :, :, :-1]
+    nx = nir[:, :, :, 1:] - nir[:, :, :, :-1]
+
+    # vertical gradient
+    fy = fused[:, :, 1:, :] - fused[:, :, :-1, :]
+    ny = nir[:, :, 1:, :] - nir[:, :, :-1, :]
+
+    return F.l1_loss(fx, nx) + F.l1_loss(fy, ny)
 
 
 
@@ -159,15 +174,26 @@ for epoch in range(epochs):
 
         nir = inputs[:, 0:1, :, :]     # NIR channel
 
+        rgb = targets                      # RGB pseudo-GT
+
+       
+
+
         optimizer.zero_grad()
         outputs = model(inputs)
 
-        loss = fusion_loss(
-            outputs,
-            rgb=targets,
-            nir=nir,
-            w_rgb=0.4,
-            w_nir=0.6
+        # loss = fusion_loss(
+        #     outputs,
+        #     rgb=targets,
+        #     nir=nir,
+        #     w_rgb=0.4,
+        #     w_nir=0.6
+        # )
+
+        loss = (
+            0.5 * F.mse_loss(outputs, rgb) +
+            0.3 * F.mse_loss(outputs, nir) +
+            0.2 * gradient_loss(outputs, nir)
         )
 
         loss.backward()
@@ -188,16 +214,23 @@ for epoch in range(epochs):
             targets = targets.to(device)
 
             nir = inputs[:, 0:1, :, :]
+            rgb = targets
 
             outputs = model(inputs)
 
-            loss = fusion_loss(
-                outputs,
-                rgb=targets,
-                nir=nir,
-                w_rgb=0.6,
-                w_nir=0.4
-            )
+            # loss = fusion_loss(
+            #     outputs,
+            #     rgb=targets,
+            #     nir=nir,
+            #     w_rgb=0.6,
+            #     w_nir=0.4
+            # )
+
+            loss = (
+            0.5 * F.mse_loss(outputs, rgb) +
+            0.3 * F.mse_loss(outputs, nir) +
+            0.2 * gradient_loss(outputs, nir)
+        )
 
             val_loss += loss.item()
 
