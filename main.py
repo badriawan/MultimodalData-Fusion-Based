@@ -138,17 +138,26 @@ print("Device using : ", device)
 
 import torch.nn.functional as F
 
+def road_mask_from_nir(nir, thresh=0.6):
+    # jalan = area NIR lebih gelap
+    return (nir < thresh).float()
+
+
 def gradient_loss(fused, nir):
-    # horizontal gradient
+    mask = road_mask_from_nir(nir)
+
     fx = fused[:, :, :, 1:] - fused[:, :, :, :-1]
     nx = nir[:, :, :, 1:] - nir[:, :, :, :-1]
+    mx = mask[:, :, :, 1:]
 
-    # vertical gradient
     fy = fused[:, :, 1:, :] - fused[:, :, :-1, :]
     ny = nir[:, :, 1:, :] - nir[:, :, :-1, :]
+    my = mask[:, :, 1:, :]
 
-    return F.l1_loss(fx, nx) + F.l1_loss(fy, ny)
+    loss_x = torch.mean(torch.abs(fx - nx) * mx)
+    loss_y = torch.mean(torch.abs(fy - ny) * my)
 
+    return loss_x + loss_y
 
 
 #Training Loop
