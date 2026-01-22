@@ -301,25 +301,36 @@ def dice_score(pred, gt, threshold=0.5):
     intersection = (pred * gt).sum()
     return (2 * intersection) / (pred.sum() + gt.sum() + 1e-8)
 
+
 model.eval()
 ssim_scores = []
 dice_scores = []
 
 with torch.no_grad():
-    for inputs, targets in test_loader:
+    for inputs, _ in test_loader:   # targets TIDAK dipakai
         inputs = inputs.to(device)
-        targets = targets.to(device)
 
         outputs = model(inputs)
 
+        # 🔑 NIR sebagai pseudo-GT
+        nir = inputs[:, 0:1, :, :]   # channel 0 = NIR
+
         pred = outputs.squeeze().cpu().numpy()
-        gt = targets.squeeze().cpu().numpy()
+        gt   = nir.squeeze().cpu().numpy()
 
-        ssim_scores.append(ssim(pred, gt, data_range=1.0))
-        dice_scores.append(dice_score(outputs, targets).item())
+        # SSIM terhadap NIR
+        ssim_scores.append(
+            ssim(pred, gt, data_range=1.0)
+        )
 
-print("Average SSIM:", np.mean(ssim_scores))
-print("Average Dice Score:", np.mean(dice_scores))
+        # Dice terhadap NIR
+        dice_scores.append(
+            dice_score(outputs, nir).item()
+        )
+
+print("Average SSIM (to NIR):", np.mean(ssim_scores))
+print("Average Dice Score (to NIR):", np.mean(dice_scores))
+
 
 #Refrences free-metrics
 def entropy(img):
