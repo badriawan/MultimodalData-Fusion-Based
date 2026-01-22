@@ -85,7 +85,7 @@ train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 val_loader   = DataLoader(val_dataset, batch_size=8, shuffle=False)
-test_loader  = DataLoader(test_dataset, batch_size=1, shuffle=False)
+test_loader  = DataLoader(test_dataset, batch_size=1, shuffle=True)
 
 print(f"Train: {len(train_dataset)} | Val: {len(val_dataset)} | Test: {len(test_dataset)}")
 
