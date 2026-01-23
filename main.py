@@ -295,17 +295,11 @@ print("Model loaded successfully")
 
 from skimage.metrics import structural_similarity as ssim
 
-# def dice_score(pred, gt, threshold=0.5):
-#     pred = (pred > threshold).float()
-#     gt = (gt > threshold).float()
-#     intersection = (pred * gt).sum()
-#     return (2 * intersection) / (pred.sum() + gt.sum() + 1e-8)
-
-def soft_dice_score(pred, gt, eps=1e-8):
-    intersection = torch.sum(pred * gt)
-    union = torch.sum(pred) + torch.sum(gt)
-    return (2 * intersection + eps) / (union + eps)
-
+def dice_score(pred, gt, threshold=0.5):
+    pred = (pred > threshold).float()
+    gt = (gt > threshold).float()
+    intersection = (pred * gt).sum()
+    return (2 * intersection) / (pred.sum() + gt.sum() + 1e-8)
 
 
 model.eval()
@@ -330,14 +324,9 @@ with torch.no_grad():
         )
 
         # Dice terhadap NIR
-        # dice_scores.append(
-        #     dice_score(outputs, nir).item()
-        # )
-
         dice_scores.append(
-            soft_dice_score(outputs, nir).item()
+            dice_score(outputs, nir).item()
         )
-
 
 print("Average SSIM (to NIR):", np.mean(ssim_scores))
 print("Average Dice Score (to NIR):", np.mean(dice_scores))
