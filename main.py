@@ -4,8 +4,6 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
-from pytorch_msssim import ssim as ssim_loss
-
 
 from Unet2encoders import UNetDualEncoderFusion
 
@@ -202,11 +200,9 @@ for epoch in range(epochs):
         # )
 
         loss = (
-            0.4 * F.mse_loss(outputs, rgb) +
+            0.5 * F.mse_loss(outputs, rgb) +
             0.3 * F.mse_loss(outputs, nir) +
-            0.2 * gradient_loss(outputs, nir) +
-            0.1 * (1 - ssim_loss(outputs, nir, data_range=1.0))
-
+            0.2 * gradient_loss(outputs, nir)
         )
 
         loss.backward()
@@ -240,11 +236,9 @@ for epoch in range(epochs):
             # )
 
             loss = (
-            0.4 * F.mse_loss(outputs, rgb) +
+            0.5 * F.mse_loss(outputs, rgb) +
             0.3 * F.mse_loss(outputs, nir) +
-            0.2 * gradient_loss(outputs, nir) +
-            0.1 * (1 - ssim_loss(outputs, nir, data_range=1.0))
-
+            0.2 * gradient_loss(outputs, nir)
         )
 
             val_loss += loss.item()
@@ -300,7 +294,6 @@ print("Model loaded successfully")
 
 
 from skimage.metrics import structural_similarity as ssim
-
 
 # def dice_score(pred, gt, threshold=0.5):
 #     pred = (pred > threshold).float()
