@@ -366,9 +366,10 @@ def edge_preservation(fused, img):
     return numerator / denominator
 
 def average_gradient(img):
-    gx = np.diff(img, axis=1)
-    gy = np.diff(img, axis=0)
-    return np.mean(np.sqrt(gx[:, :-1]**2 + gy[:-1, :]**2))
+    gx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
+    gy = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
+    return np.mean(np.sqrt(gx**2 + gy**2))
+
 
 
 def spatial_frequency(img):
