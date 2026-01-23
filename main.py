@@ -295,7 +295,7 @@ print("Model loaded successfully")
 
 from skimage.metrics import structural_similarity as ssim
 
-def dice_score(pred, gt, threshold=0.5):
+def dice_score(pred, gt, threshold=0.3):
     pred = (pred > threshold).float()
     gt = (gt > threshold).float()
     intersection = (pred * gt).sum()
