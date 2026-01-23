@@ -365,9 +365,35 @@ def edge_preservation(fused, img):
 
     return numerator / denominator
 
+def average_gradient(img):
+    gx = np.diff(img, axis=1)
+    gy = np.diff(img, axis=0)
+    return np.mean(np.sqrt(gx[:, :-1]**2 + gy[:-1, :]**2))
+
+
+def spatial_frequency(img):
+    rf = np.mean((img[:, 1:] - img[:, :-1])**2)
+    cf = np.mean((img[1:, :] - img[:-1, :])**2)
+    return np.sqrt(rf + cf)
+
+def psnr(img1, img2):
+    mse = np.mean((img1 - img2) ** 2)
+    if mse == 0:
+        return 100
+    return 20 * np.log10(1.0 / np.sqrt(mse))
+
+def rmse(img1, img2):
+    return np.sqrt(np.mean((img1 - img2) ** 2))
+
+
 entropy_scores = []
 mi_scores = []
 epi_scores = []
+
+ag_scores = []
+sf_scores = []
+psnr_scores = []
+rmse_scores = []
 
 model.eval()
 with torch.no_grad():
@@ -376,14 +402,15 @@ with torch.no_grad():
         fused = model(inputs)
 
         fused_img = fused.squeeze().cpu().numpy()
-        rgb = inputs[0,2].cpu().numpy()
-        nir = inputs[0,0].cpu().numpy()
+
+        # modalities
+        nir   = inputs[0,0].cpu().numpy()   # pseudo-GT
+        rgb   = inputs[0,2].cpu().numpy()
         therm = inputs[0,1].cpu().numpy()
 
-        # Entropy
+        # ---------- Information theory ----------
         entropy_scores.append(entropy(fused_img))
 
-        # Mutual Information
         mi_total = (
             mutual_information(fused_img, rgb) +
             mutual_information(fused_img, nir) +
@@ -391,7 +418,7 @@ with torch.no_grad():
         )
         mi_scores.append(mi_total)
 
-        # Edge Preservation
+        # ---------- Edge preservation ----------
         epi = (
             edge_preservation(fused_img, rgb) +
             edge_preservation(fused_img, nir) +
@@ -399,9 +426,24 @@ with torch.no_grad():
         ) / 3
         epi_scores.append(epi)
 
-print("Average Entropy:", np.mean(entropy_scores))
-print("Average Mutual Information:", np.mean(mi_scores))
-print("Average Edge Preservation Index:", np.mean(epi_scores))
+        # ---------- Feature-based metrics ----------
+        ag_scores.append(average_gradient(fused_img))
+        sf_scores.append(spatial_frequency(fused_img))
+
+        # ---------- Structural similarity-based ----------
+        psnr_scores.append(psnr(fused_img, nir))   # to NIR
+        rmse_scores.append(rmse(fused_img, nir))   # to NIR
+
+print("Average Entropy (EN):", np.mean(entropy_scores))
+print("Average Mutual Information (MI):", np.mean(mi_scores))
+print("Average Edge Preservation Index (EPI):", np.mean(epi_scores))
+
+print("Average Average Gradient (AG):", np.mean(ag_scores))
+print("Average Spatial Frequency (SF):", np.mean(sf_scores))
+
+print("Average PSNR (to NIR):", np.mean(psnr_scores))
+print("Average RMSE (to NIR):", np.mean(rmse_scores))
+
 
 
 #Save Fused Sample
